@@ -1,99 +1,65 @@
-const storiesContainer = document.getElementById('stories-container');
-        const storyContainer = document.getElementById('story-container');
+let newsAPI = "http://api.mediastack.com/v1/news?countries=us,in&access_key=2720e6ca9665e312e3205f"
+let dummyImage="dummy-image.jpg";
 
+let app = document.querySelector(".app");
+let screen = {
+  main:app.querySelector("main-screen"),
+  news:app.querySelector("news-screen")
+};
 
-        fetch('https://content.guardianapis.com/search?section=world&show-fields=all&show-blocks=body&api-key=test')
-        .then(res => res.json())
-        .then(res => handleRes(res))
-        .catch(() => console.log("Fetch failed"));
+let categories = ["General","Business","Technology","Entertainment","Health","Science","Sports"];
 
+for(let i=0;i<categories.length;i++){
+  let div = document.createElement("div");
+  div.innertext = categories[i];
+  div.addEventListener("click",function(){
+    screen.main.querySelector(".categories .active").classlist.remove("active");
+    div.classlist.add("active");
+    fetchCategoryNews(categories[i]);
+  });
+  if(i==0){
+    div.classlist.add("active");
+    fetchCategoryNews(categories[i]);
+  }
+  screen.main.querySelector(".categories").appendChild(div);
+}
 
-        function handleRes(data) {
-            // Access fetched data as array
-            let dataArray = Object.entries(data.response.results);
+async function fetchCategoryNews(category){
+  screen.main.querySelector(".news-list").innerHTML ="";
+  try {
+    let res = await fetch(newsAPI + category.tolowerCase());
+    let data = await res.json();
+    let news = data.data;
+    
+    for(let i=0;i<news.length;i++){
+      let div = document.createElement("div");
+      div.classlist.add("item");
+      div.addEventListener("click",function(){
+        showFULLNEWS(news[i]);
+      });
+      div.innerHTML =
+        <div class ="thumbnail">
+          <img src="${news[i].image || dummyImage}">
+        </div>
+        <div class="details">
+        <h2>${news[i].title}</h2>
+        <p>${news[i].descriptiom}</p>
+      </div>
+      ;
+     screen.main.querySelector(".news-list").appendchild(div);
+    }
+  } catch(msg){}
 
-            // Create each article using map
-            let article, articleContent;
-            dataArray.map((story) => {
-
-                // Construct content of each with template literal              
-                articleContent = `
-                <h3>${story[1].webTitle}</h3>
-                <img src="${story[1].fields.thumbnail}">
-                <p>${story[1].fields.trailText}</p>
-                `
-
-                // Create article element (container)
-                article = document.createElement('article');
-                // Set innerHTML of article element to template
-                article.innerHTML = articleContent;
-                // Create and append button to show full story
-                button = document.createElement('button');
-                button.innerText = "Read full story";
-                button.id = "showStory";
-                button.addEventListener('click', showFullStory);
-                article.append(button);
-                // Save data for full story view in element attributes
-                article.setAttribute('title', story[1].webTitle);
-                article.setAttribute('body', story[1].blocks.body[0].bodyHtml);
-                article.setAttribute('img', story[1].fields.main);
-                article.setAttribute('author', story[1].fields.byline);
-
-                // append article so it appears in headlines view
-                // IF it is an article
-                if (story[1].type == "article") {
-                storiesContainer.append(article);
-                }
-           })
-
-           // Generate button to refresh headlines and
-           // append to header element
-           button = document.createElement('button');
-           button.id = "refresh";
-           button.innerText = "Refresh headlines";
-           button.addEventListener('click', () => { location.reload(); });
-           header.append(button);
-        }
-
-        function showFullStory(e) {
-            // Make the headlines view invisible
-            storiesContainer.classList.add("no-display");
-            // Make the full story view visible
-            storyContainer.classList.remove("no-display");
-            // Make the refresh button invisible
-            document.getElementById('refresh').classList.add("no-display");
-
-            // Create the HTML for the full story view
-            // using the data saved as attributes
-            storyContainer.innerHTML = `
-            <h2>${e.target.parentElement.getAttribute('title')}</h2>
-            <span class="author">By ${e.target.parentElement.getAttribute('author')}</span>
-            <article>
-                ${e.target.parentElement.getAttribute('img')}
-                ${e.target.parentElement.getAttribute('body')}
-            </article>
-            `
-            // Create a return button to return to headlines view
-            let returnButton = document.createElement('button');
-            returnButton.innerText="Return to headlines";
-            returnButton.id="return";
-
-            // Clear story and make headlines appear again
-            returnButton.addEventListener('click', () => {
-                // Clear storyContainer and make invisible
-                storyContainer.innerHTML = "";
-                storyContainer.classList.add("no-display");
-                // Make headlines view visible again
-                storiesContainer.classList.remove("no-display");
-                // Make the refresh button visible again
-                document.getElementById('refresh').classList.remove("no-display");
-                // Remove the return button
-                document.getElementById('return').remove();
-            })
-
-            // Append return button to header
-            header.append(returnButton);
-
-            // Makes sure user starts from top of story
-            window.scrollTo(0,0); 
-        }
+  
+  function showFullNews(news){
+    screen.main.classlist.add("hidden");
+    screen.news.classlist.remove("hidden");
+    
+     screen.news.querySelector(".header .title").innertext = news.title;
+    screen.news.querySelector(".header .back-btn").addEventListener("click",function(){
+      screen.main.classlist.add("hidden");
+      screen.main.classlist.remove("hidden");
+    });
+    screen.news.querySelector("#news-frame").src = news.url;
+  }
+                
